@@ -21,7 +21,7 @@ gcloud auth login
 By default, the services are not enabled. So, we need to enable the GCR.
 
 ```
-gcloud services enable
+gcloud services enable \
 	containerregistry.googleapis.com \
 	container.googleapis.com
 ```
