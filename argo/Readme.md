@@ -125,18 +125,62 @@ kubectl get all -n argocd
 
 **Tip:** for the production environment we need to configure the Ingress. [Ingress Configuration](https://argo-cd.readthedocs.io/en/stable/operator-manual/ingress/)
 
+## Ingress (Optional) **Updates and review required**
+
+```
+apiVersion: networking.k8s.io/v1beta1
+kind: Ingress
+metadata:
+  name: argocd-server-ingress
+  namespace: argocd
+  annotations:
+    kubernetes.io/ingress.class: gce
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/ssl-passthrough: "true"
+spec:
+  rules:
+  - host: argocd.example.com
+    http:
+      paths:
+      - backend:
+          serviceName: argocd-server
+          servicePort: https
+
+```
+
+```
+apiVersion: networking.k8s.io/v1beta1
+kind: Ingress
+metadata:
+  name: hello-gke-ing
+  annotations:
+    kubernetes.io/ingress.class: gce
+spec:
+  rules:
+  - http:
+      paths:
+      - path: /*
+        backend:
+          serviceName: hello-gke-ing
+          servicePort: 80
+```
+
 ## **Login to ArgoCD**
 
 Argo initializes its admin user with a random password. This passowrd can be accessed using the following command:
 
 ```
+
 kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d; echo
+
 ```
 
 Use username `admin` and the password to login:
 
 ```
+
 argocd login localhost:8080
+
 ```
 
 ## **Register Cluster to ArgoCD (If Argo and Cluster are not local)**
@@ -144,13 +188,17 @@ argocd login localhost:8080
 Get current kubernetes clusters:
 
 ```
+
 kubectl config get-contexts -o name
+
 ```
 
 Choose a cluster and register it to the ArgoCD:
 
 ```
+
 argocd cluster add <cluster-name>
+
 ```
 
 ## **Create an App on the Argo**
@@ -158,12 +206,14 @@ argocd cluster add <cluster-name>
 Now, we consider that there is a sample application on a git repository. We want to create an applicatino in the ArgoCD to sync the cluster with this application latest version. ArgoCD pulls the latest version and updates the cluster state.
 
 ```
+
 argocd app create <application-name> \
 --repo https://github.com/<repo-address> \
 --revision <branch-name> \
 --path <path-to-kustomization-manifests> \
 --dest-server https://kubernetes.default.svc \
 --dest-namespace default
+
 ```
 
 - `dest-server` : should be the URL of the kubernetes cluster. If it is the local default kubernetes, use `https://kubernetes.default.svc`. Unless otherwise, use the valid path.
@@ -175,17 +225,27 @@ argocd app create <application-name> \
 At this step, you configured an application on the ArgoCD. But, the cluster has not been updated yet. So, the initial status will be `OutOfSync`. You can see the application description and details using the following command:
 
 ```
+
 argocd app get <application-name>
+
 ```
 
 Run the following command to start the sync:
 
 ```
+
 argocd app sync <application-name>
+
 ```
 
 ## **Delete the cluster if you want to cleanup everything**
 
 ```
+
 gcloud container clusters delete <CLUSTER_NAME> --zone <ZONE>
+
+```
+
+```
+
 ```
