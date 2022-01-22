@@ -1,4 +1,4 @@
-### **Workflow Syntax**
+# **Workflow Core and Templates**
 
 Everything in argo workflow is a template. So, we should learn how to define workflows using templates. Like other kubernetes configuration files, argo workflow structure starts with such syntax:
 
@@ -217,114 +217,111 @@ DAGs help to specify the tasks in any order and specify the dependencies. So, th
         template: echo
 ```
 
-## **Variables**
+### **Example: Volumes**
 
-Variables are enclosed in `{{}}`:
-
-```
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: hello-world-parameters-
-spec:
-  entrypoint: whalesay
-  arguments:
-    parameters:
-      - name: message
-        value: hello world
-  templates:
-    - name: whalesay
-      inputs:
-        parameters:
-          - name: message
-      container:
-        image: docker/whalesay
-        command: [ cowsay ]
-        args: [ "{{inputs.parameters.message}}" ]
-```
-
-There are two type of variable tags:
-
-- **simple** `{{workflow.name}}`
-- **expression** `{{=workflow.name}}`
+**Create Volume in Workflow**
+Create a shared volume and use the same volume in a 2 step workflow. In this example, both workflow steps, have access to the same volume and same data. In the following example, workflow creates a volume and both steps, use this volume.
 
 ```
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: dag-
+  generateName: volumes-pvc-
 spec:
-  entrypoint: full
-  volumes:
-  - name: kaniko-secret
-    secret:
-      secretName: regcred
-      items:
-        - key: .dockerconfigjson
-          path: config.json
+  entrypoint: volumes-pvc-example
+  volumeClaimTemplates:                 # define volume, same syntax as k8s Pod spec
+  - metadata:
+      name: workdir                     # name of volume claim
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 1Gi                  # Gi => 1024 * 1024 * 1024
+
   templates:
-  - name: full
-    dag:
-      tasks:
-      - name: task-a
-        template: my-task
-        arguments:
-          parameters:
-          - name: message
-            value: This is task-a
-      - name: task-b
-        template: my-task
-        arguments:
-          parameters:
-          - name: message
-            value: This is task-b
-      - name: task-c
-        template: my-task
-        arguments:
-          parameters:
-          - name: message
-            value: This is task-c
-      - name: task-d
-        template: my-task
-        arguments:
-          parameters:
-          - name: message
-            value: This is task-d
-        dependencies:
-        - task-a
-      - name: task-e
-        template: my-task
-        arguments:
-          parameters:
-          - name: message
-            value: This is task-e
-        dependencies:
-        - task-a
-      - name: task-f
-        template: my-task
-        arguments:
-          parameters:
-          - name: message
-            value: This is task-f
-        dependencies:
-        - task-a
-        - task-e
-      - name: task-g
-        template: my-task
-        arguments:
-          parameters:
-          - name: message
-            value: This is task-g
-  - name: my-task
-    inputs:
-      parameters:
-      - name: message
+  - name: volumes-pvc-example
+    steps:
+    - - name: generate
+        template: whalesay
+    - - name: print
+        template: print-message
+
+  - name: whalesay
     container:
-      image: alpine
-      command: [echo]
-      args:
-      - "{{inputs.parameters.message}}"
+      image: docker/whalesay:latest
+      command: [sh, -c]
+      args: ["echo generating message in volume; cowsay hello world | tee /mnt/vol/hello_world.txt"]
+      # Mount workdir volume at /mnt/vol before invoking docker/whalesay
+      volumeMounts:                     # same syntax as k8s Pod spec
+      - name: workdir
+        mountPath: /mnt/vol
+
+  - name: print-message
+    container:
+      image: alpine:latest
+      command: [sh, -c]
+      args: ["echo getting message from volume; find /mnt/vol; cat /mnt/vol/hello_world.txt"]
+      # Mount workdir volume at /mnt/vol before invoking docker/whalesay
+      volumeMounts:                     # same syntax as k8s Pod spec
+      - name: workdir
+        mountPath: /mnt/vol
 
 ```
 
-[Argo Workflow Examples](https://github.com/argoproj/argo-workflows/blob/master/examples/README.md)
+**Use Pre-existing Volume**
+If you want to use a volume that already exists, you can follow this example. In this example, there is a volume on kubernetes cluster and we will be using this volume for the tasks in the workflow. The idea is that, we need to use reference the VolumeClaim in our workflow.
+
+```
+# Define Kubernetes PVC
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: my-existing-volume
+spec:
+  accessModes: [ "ReadWriteOnce" ]
+  resources:
+    requests:
+      storage: 1Gi
+
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: volumes-existing-
+spec:
+  entrypoint: volumes-existing-example
+  volumes:
+  # Pass my-existing-volume as an argument to the volumes-existing-example template
+  # Same syntax as k8s Pod spec
+  - name: workdir
+    persistentVolumeClaim:
+      claimName: my-existing-volume
+
+  templates:
+  - name: volumes-existing-example
+    steps:
+    - - name: generate
+        template: whalesay
+    - - name: print
+        template: print-message
+
+  - name: whalesay
+    container:
+      image: docker/whalesay:latest
+      command: [sh, -c]
+      args: ["echo generating message in volume; cowsay hello world | tee /mnt/vol/hello_world.txt"]
+      volumeMounts:
+      - name: workdir
+        mountPath: /mnt/vol
+
+  - name: print-message
+    container:
+      image: alpine:latest
+      command: [sh, -c]
+      args: ["echo getting message from volume; find /mnt/vol; cat /mnt/vol/hello_world.txt"]
+      volumeMounts:
+      - name: workdir
+        mountPath: /mnt/vol
+```
+
+There is a very useful list of examples here: [Argo Workflow Examples](https://github.com/argoproj/argo-workflows/blob/master/examples/README.md)

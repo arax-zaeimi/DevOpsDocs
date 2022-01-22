@@ -56,6 +56,8 @@ kubectl get svc argo-server -n argo
 **Ingerss**
 Follow the instructions in this thread: [Ingress](https://argoproj.github.io/argo-workflows/argo-server/#ingress)
 
-### **Workflow Templates**
+The rest of the document is as follow:
 
-To learn the core concepts and learn how to define workflows, please refer to this document. [Workflows Core Concepts](./learn-workflows.md)
+- [Core Concepts and Workflow Templates](./templates.md)
+- [Variables](./variables.md)
+- [Service Account](./service-account.md)
