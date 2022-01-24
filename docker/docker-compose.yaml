@@ -1,0 +1,12 @@
+version: '3'
+services:
+  CONTAINER_NAME:
+    image: IMAGE_NAME
+    ports:
+      - 8080:8080 # HOST:CONTAINER
+    environment:
+      - name=value
+    volumes:
+      - VOLUME_NAME:CONTAINER_PATH:MODE
+volumes:
+  VOLUME_NAME

@@ -1,0 +1,14 @@
+# Always the first line starts with FROM. FROM specifies the base image for the package. e.g: alpine
+FROM base-image-name
+
+# We can specify the Environmental Variables. But it's better to define them in docker compose.
+ENV key=value \
+    key2=value2
+
+# After RUN you can execute any linux command.
+RUN mkdir -p /home/app
+
+COPY /src /home/app
+
+# Entrypoint Command - There's only ONE CMD in docker file
+CMD ["server.py"]
