@@ -53,8 +53,37 @@ Then you should wait for an external IP to be assigned to your service. You can 
 kubectl get svc argo-server -n argo
 ```
 
-**Ingerss**
-Follow the instructions in this thread: [Ingress](https://argoproj.github.io/argo-workflows/argo-server/#ingress)
+## **Ingerss**
+
+In this guide, we will be configuring `nginx.ingress` on GKE to access to the Argo Workflows UI.
+[Ingress Configuration](./ingress-configuration.md)
+
+## **Install CLI**
+
+We need to CLI to get authorization token to login to the UI. So, let's install the CLI.
+
+```
+# Download the binary
+curl -sLO https://github.com/argoproj/argo-workflows/releases/download/v3.2.6/argo-linux-amd64.gz
+
+# Unzip
+gunzip argo-linux-amd64.gz
+
+# Make binary executable
+chmod +x argo-linux-amd64
+
+# Move binary to path
+mv ./argo-linux-amd64 /usr/local/bin/argo
+
+# Test installation
+argo version
+```
+
+Then, you can get a login token with the following command:
+
+```
+argo auth token
+```
 
 The rest of the document is as follow:
 
