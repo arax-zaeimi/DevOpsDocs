@@ -2,6 +2,16 @@
 
 In this document, we demonstrate how to install Argo Workflows on GKE. Then, we will show some use cases.
 
+**NOTE:** It is very important to verify the cluster pod pool configuration on GKE before Argo Workflows installation. You should make sure that `Nodes/ImageType` is set to `Container-Optimized OS with Docker (cos)`. You can apply this configuration in cluster settings.
+
+**_If you don't use this configuration, workflows get stuck and never finish._**
+
+```
+Clusters -> Nodes -> Node Pools -> Nodes/ImageType
+```
+
+---
+
 On GKE we need a `clusterrolebinding` RBAC. Let's create it:
 
 ```
