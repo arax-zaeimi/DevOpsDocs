@@ -2,6 +2,16 @@
 
 In this document, we demonstrate how to install Argo Workflows on GKE. Then, we will show some use cases.
 
+**NOTE:** It is very important to verify the cluster pod pool configuration on GKE before Argo Workflows installation. You should make sure that `Nodes/ImageType` is set to `Container-Optimized OS with Docker (cos)`. You can apply this configuration in cluster settings.
+
+**_If you don't use this configuration, workflows get stuck and never finish._**
+
+```
+Clusters -> Nodes -> Node Pools -> Nodes/ImageType
+```
+
+---
+
 On GKE we need a `clusterrolebinding` RBAC. Let's create it:
 
 ```
@@ -25,7 +35,31 @@ Download the configmap from [here](https://argoproj.github.io/argo-workflows/wor
 
 **_The executor to be used in your workflows can be changed in the `configmap` under the `containerRuntimeExecutor` key._**
 
-### Access the Argo Workflows UI
+## **Security**
+
+Argo uses serviceaccount to access resources on kubernetes. You can specify the serviceaccount to be used in argo workflows. To do this, while creating workflows, mention the serviceaccount name that you want to use:
+
+```
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: basic-wf-
+  labels:
+    workflows.argoproj.io/archive-strategy: "false"
+spec:
+  entrypoint: hello
+  serviceAccountName: argo
+```
+
+Also, keep in mind that this service account should have suffcient privileges. For test purposes, you can use the following command. **!!!NOT SECURE!!!**
+
+```
+kubectl create rolebinding default-admin --clusterrole=admin --serviceaccount=argo:default -n argo
+```
+
+With this command you are giving the admin permission to argo serviceaccount.
+
+## **Access the Argo Workflows UI**
 
 To access the UI, there are different methods based on your environment and choice.
 
@@ -53,8 +87,37 @@ Then you should wait for an external IP to be assigned to your service. You can 
 kubectl get svc argo-server -n argo
 ```
 
-**Ingerss**
-Follow the instructions in this thread: [Ingress](https://argoproj.github.io/argo-workflows/argo-server/#ingress)
+## **Ingerss**
+
+In this guide, we will be configuring `nginx.ingress` on GKE to access to the Argo Workflows UI.
+[Ingress Configuration](./ingress-configuration.md)
+
+## **Install CLI**
+
+We need to CLI to get authorization token to login to the UI. So, let's install the CLI.
+
+```
+# Download the binary
+curl -sLO https://github.com/argoproj/argo-workflows/releases/download/v3.2.6/argo-linux-amd64.gz
+
+# Unzip
+gunzip argo-linux-amd64.gz
+
+# Make binary executable
+chmod +x argo-linux-amd64
+
+# Move binary to path
+mv ./argo-linux-amd64 /usr/local/bin/argo
+
+# Test installation
+argo version
+```
+
+Then, you can get a login token with the following command:
+
+```
+argo auth token
+```
 
 The rest of the document is as follow:
 

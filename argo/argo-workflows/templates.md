@@ -114,7 +114,7 @@ metadata:
     workflows.argoproj.io/archive-strategy: "false"
 spec:
   entrypoint: hello
-  serviceAccountName: workflow
+  serviceAccountName: argo
   templates:
   - name: hello
     steps:
