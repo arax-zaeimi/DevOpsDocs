@@ -35,7 +35,31 @@ Download the configmap from [here](https://argoproj.github.io/argo-workflows/wor
 
 **_The executor to be used in your workflows can be changed in the `configmap` under the `containerRuntimeExecutor` key._**
 
-### Access the Argo Workflows UI
+## **Security**
+
+Argo uses serviceaccount to access resources on kubernetes. You can specify the serviceaccount to be used in argo workflows. To do this, while creating workflows, mention the serviceaccount name that you want to use:
+
+```
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: basic-wf-
+  labels:
+    workflows.argoproj.io/archive-strategy: "false"
+spec:
+  entrypoint: hello
+  serviceAccountName: argo
+```
+
+Also, keep in mind that this service account should have suffcient privileges. For test purposes, you can use the following command. **!!!NOT SECURE!!!**
+
+```
+kubectl create rolebinding default-admin --clusterrole=admin --serviceaccount=argo:default -n argo
+```
+
+With this command you are giving the admin permission to argo serviceaccount.
+
+## **Access the Argo Workflows UI**
 
 To access the UI, there are different methods based on your environment and choice.
 
